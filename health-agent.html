@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的健康 Agent</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;background:#f5f5f0;color:#1a1a18;min-height:100vh}
+.app-wrap{max-width:480px;margin:0 auto;padding:16px;min-height:100vh}
+.app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.app-title{font-size:18px;font-weight:600;color:#1a1a18}
+.app-subtitle{font-size:12px;color:#888780}
+.nav{display:flex;gap:2px;background:#e8e7e2;border-radius:12px;padding:4px;margin-bottom:16px}
+.nav-btn{flex:1;padding:7px 2px;font-size:11px;border:none;background:transparent;border-radius:9px;cursor:pointer;color:#888780;white-space:nowrap;transition:all .2s;font-family:inherit}
+.nav-btn.active{background:#fff;color:#1a1a18;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.page{display:none}.page.active{display:block}
+.card{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;border:0.5px solid rgba(0,0,0,0.06)}
+.section-label{font-size:11px;font-weight:500;color:#888780;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.mcard{background:#f5f5f0;border-radius:10px;padding:10px 12px}
+.mcard .label{font-size:10px;color:#888780;margin-bottom:3px}
+.mcard .val{font-size:17px;font-weight:600;color:#1a1a18}
+.mcard .unit{font-size:10px;color:#888780;margin-left:2px;font-weight:400}
+.habit{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fff;border:0.5px solid rgba(0,0,0,0.08);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:border-color .15s}
+.habit:hover{border-color:#1D9E75}
+.hcheck{width:18px;height:18px;border-radius:5px;border:1.5px solid #d3d1c7;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:all .15s;color:transparent}
+.hcheck.on{background:#1D9E75;border-color:#1D9E75;color:#fff}
+.htxt{font-size:13px;flex:1;line-height:1.4}
+.htag{font-size:10px;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.t-fit{background:#E1F5EE;color:#085041}
+.t-nut{background:#FAEEDA;color:#633806}
+.t-pre{background:#FBEAF0;color:#72243E}
+.t-rec{background:#E6F1FB;color:#0C447C}
+.pbar-wrap{height:6px;background:#e8e7e2;border-radius:3px;overflow:hidden;margin:6px 0 8px}
+.pbar-fill{height:100%;background:linear-gradient(90deg,#1D9E75,#5DCAA5);border-radius:3px;transition:width .5s ease}
+.upload-area{border:1.5px dashed #d3d1c7;border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;position:relative;background:#fafaf8}
+.upload-area:hover{border-color:#1D9E75;background:#f0faf6}
+.upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+#food-preview{width:100%;border-radius:10px;max-height:220px;object-fit:cover;display:none;margin-bottom:10px}
+.ai-msg{background:#f5f5f0;border-radius:4px 12px 12px 12px;padding:12px 14px;font-size:13px;line-height:1.75;color:#1a1a18;margin-bottom:10px;white-space:pre-wrap}
+.ai-loading{color:#888780;font-size:12px;padding:8px 0;font-style:italic}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
+.cal-day{text-align:center}
+.cal-dn{font-size:9px;color:#888780;margin-bottom:2px;text-align:center}
+.cal-dot{width:100%;aspect-ratio:1;border-radius:50%;border:0.5px solid #d3d1c7;display:flex;align-items:center;justify-content:center;font-size:9px;color:#888780;cursor:pointer;transition:all .15s;max-width:32px;margin:0 auto}
+.cal-dot:hover{border-color:#1D9E75}
+.cal-dot.done{background:#1D9E75;border-color:#1D9E75;color:#fff;font-weight:600}
+.cal-dot.rest{background:#f5f5f0;color:#b4b2a9;font-size:8px}
+.bbt-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.inp{flex:1;padding:8px 12px;border:0.5px solid #d3d1c7;border-radius:10px;font-size:13px;background:#fff;color:#1a1a18;font-family:inherit;outline:none;transition:border-color .15s}
+.inp:focus{border-color:#1D9E75}
+.btn{padding:9px 16px;border:0.5px solid #d3d1c7;border-radius:10px;background:#fff;color:#1a1a18;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit;font-weight:500}
+.btn:hover{background:#f5f5f0}
+.btn-primary{background:#1D9E75;border-color:#1D9E75;color:#fff}
+.btn-primary:hover{background:#0F6E56}
+.btn-sm{padding:6px 12px;font-size:12px}
+.chat-area{max-height:300px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.msg-user{background:#1D9E75;border-radius:12px 4px 12px 12px;padding:9px 13px;font-size:13px;line-height:1.6;align-self:flex-end;max-width:85%;color:#fff}
+.msg-ai{background:#f5f5f0;border-radius:4px 12px 12px 12px;padding:9px 13px;font-size:13px;line-height:1.6;align-self:flex-start;max-width:92%;white-space:pre-wrap;color:#1a1a18}
+.chat-input-row{display:flex;gap:6px}
+.chat-input-row input{flex:1}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#1D9E75;display:inline-block;margin-right:5px}
+.quick-btns{display:flex;flex-wrap:wrap;gap:6px}
+.tag-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.bbt-log{font-size:12px;color:#888780;line-height:1.9}
+.save-indicator{position:fixed;bottom:20px;right:20px;background:#1D9E75;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app-wrap">
+  <div class="app-header">
+    <div>
+      <div class="app-title">健康 Agent</div>
+      <div class="app-subtitle">减脂 · 增肌 · 备孕 · 30天计划</div>
+    </div>
+    <div style="font-size:12px;color:#888780" id="header-date"></div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="show('home')">总览</button>
+    <button class="nav-btn" onclick="show('workout')">运动</button>
+    <button class="nav-btn" onclick="show('food')">饮食</button>
+    <button class="nav-btn" onclick="show('prenatal')">备孕</button>
+    <button class="nav-btn" onclick="show('advisor')">AI顾问</button>
+  </div>
+
+  <!-- HOME -->
+  <div id="p-home" class="page active">
+    <div class="grid4">
+      <div class="mcard"><div class="label">今日运动</div><div class="val" id="h-workout">-</div></div>
+      <div class="mcard"><div class="label">今日热量</div><div class="val" id="h-cal">0<span class="unit">kcal</span></div></div>
+      <div class="mcard"><div class="label">打卡天数</div><div class="val" id="h-days">0<span class="unit">天</span></div></div>
+      <div class="mcard"><div class="label">本周训练</div><div class="val" id="h-week">0<span class="unit">/4</span></div></div>
+    </div>
+    <div class="card">
+      <div class="section-label">30天进度</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="h-prog" style="width:0%"></div></div>
+      <div style="font-size:12px;color:#888780" id="h-prog-txt">第1天，开始你的旅程</div>
+    </div>
+    <div class="card">
+      <div class="section-label"><span class="status-dot"></span>AI 每日简报</div>
+      <div class="ai-msg" id="home-brief">正在生成今日简报...</div>
+      <button class="btn btn-sm" onclick="getHomeBrief()" style="width:100%;margin-top:4px">刷新简报</button>
+    </div>
+  </div>
+
+  <!-- WORKOUT -->
+  <div id="p-workout" class="page">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="section-label" style="margin:0">今日训练</div>
+        <span style="font-size:12px;color:#888780" id="today-date"></span>
+      </div>
+      <div id="workout-list"></div>
+    </div>
+    <div class="card">
+      <div class="section-label">本月日历</div>
+      <div class="cal" id="cal-header"></div>
+      <div class="cal" id="cal-grid"></div>
+    </div>
+    <div class="card">
+      <div class="section-label">本周总结</div>
+      <div class="bbt-log" id="week-summary">打卡后自动更新</div>
+    </div>
+  </div>
+
+  <!-- FOOD -->
+  <div id="p-food" class="page">
+    <div class="card">
+      <div class="section-label">拍照识别食物</div>
+      <div class="upload-area" id="upload-area">
+        <input type="file" accept="image/*" id="food-input" onchange="onFoodImg(event)">
+        <div style="font-size:32px;margin-bottom:8px">📷</div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:4px">点击上传食物照片</div>
+        <div style="font-size:12px;color:#888780">支持拍照或从相册选择</div>
+      </div>
+      <img id="food-preview" src="" alt="">
+      <button class="btn btn-primary" id="analyze-btn" style="width:100%;display:none;margin-bottom:10px" onclick="analyzeFood()">AI 分析营养成分</button>
+      <div id="food-loading" class="ai-loading" style="display:none">AI 正在识别食物营养成分...</div>
+      <div id="food-result" style="display:none">
+        <div class="grid4" id="food-macros"></div>
+        <div class="ai-msg" id="food-advice"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="saveFoodLog()">记录到今日饮食 ✓</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">今日饮食记录</div>
+      <div id="food-log-list" style="font-size:13px;color:#888780">暂无记录</div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="mcard"><div class="label">今日总热量</div><div class="val" id="total-cal">0<span class="unit">kcal</span></div></div>
+        <div class="mcard"><div class="label">建议目标</div><div class="val">1800<span class="unit">kcal</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRENATAL -->
+  <div id="p-prenatal" class="page">
+    <div class="card">
+      <div class="section-label">基础体温 BBT 记录</div>
+      <div class="bbt-row">
+        <input class="inp" type="number" id="bbt-val" placeholder="如：36.5" step="0.01" min="35" max="38.5">
+        <button class="btn btn-primary btn-sm" onclick="logBBT()">记录今日</button>
+      </div>
+      <div id="bbt-log-list" class="bbt-log">暂无记录</div>
+    </div>
+    <div class="card">
+      <div class="section-label">每日补剂打卡</div>
+      <div class="habit" onclick="toggleHabit('supp-folic')">
+        <div class="hcheck" id="supp-folic">✓</div>
+        <div class="htxt">叶酸 0.4mg</div>
+        <span class="htag t-pre">必需</span>
+      </div>
+      <div class="habit" onclick="toggleHabit('supp-vd')">
+        <div class="hcheck" id="supp-vd">✓</div>
+        <div class="htxt">维生素 D 1000IU</div>
+        <span class="htag t-pre">备孕</span>
+      </div>
+      <div class="habit" onclick="toggleHabit('supp-omega')">
+        <div class="hcheck" id="supp-omega">✓</div>
+        <div class="htxt">Omega-3（DHA 200mg）</div>
+        <span class="htag t-pre">备孕</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">月经周期追踪</div>
+      <div class="bbt-row">
+        <input class="inp" type="date" id="cycle-date">
+        <button class="btn btn-primary btn-sm" onclick="logCycle()">标记月经开始</button>
+      </div>
+      <div id="cycle-info" class="bbt-log" style="margin-top:6px">记录后自动推算排卵窗口</div>
+    </div>
+    <div class="card">
+      <div class="section-label"><span class="status-dot"></span>今日备孕建议</div>
+      <div id="prenatal-advice" class="ai-msg">点击下方按钮获取</div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="getPrenatalAdvice()">获取今日备孕指导</button>
+    </div>
+  </div>
+
+  <!-- ADVISOR -->
+  <div id="p-advisor" class="page">
+    <div class="card" style="padding:12px">
+      <div class="section-label" style="margin-bottom:10px"><span class="status-dot"></span>AI 健康顾问</div>
+      <div class="chat-area" id="chat-area">
+        <div class="msg-ai">你好！我是你的专属 AI 健康顾问 💪
+
+我了解你的目标：减脂塑形 + 增肌 + 备孕，运动基础好（每周3次以上），正在进行30天计划。
+
+你可以问我任何问题：
+• 今天应该吃什么？
+• 我这周运动量够吗？
+• 排卵期快到了，注意什么？
+• 帮我分析我的进展</div>
+      </div>
+      <div class="chat-input-row">
+        <input class="inp" type="text" id="chat-input" placeholder="问我任何健康问题..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn btn-primary" onclick="sendChat()">发送</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">快速提问</div>
+      <div class="quick-btns">
+        <button class="btn btn-sm" onclick="quickAsk('根据我今天的运动和饮食，给我总结和建议')">今日总结</button>
+        <button class="btn btn-sm" onclick="quickAsk('我这周的训练完成情况如何？需要调整吗？')">周计划评估</button>
+        <button class="btn btn-sm" onclick="quickAsk('备孕期间这周有什么要特别注意的？')">备孕指导</button>
+        <button class="btn btn-sm" onclick="quickAsk('帮我制定明天的饮食和训练计划')">明日计划</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="save-indicator" id="save-ind">已保存 ✓</div>
+
+<script>
+const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+const MODEL = 'claude-sonnet-4-20250514';
+const KEY = 'health_agent_data_v2';
+
+let data = {
+  workoutDays:{}, foodLogs:{}, bbt:[], cycles:[],
+  suppLogs:{}, chatHistory:[],
+  startDate: new Date().toISOString().split('T')[0]
+};
+
+function loadData(){
+  try{const s=localStorage.getItem(KEY);if(s)data=JSON.parse(s);}catch(e){}
+  renderAll();
+}
+
+function saveData(){
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+  const ind=document.getElementById('save-ind');
+  ind.style.opacity='1';
+  setTimeout(()=>ind.style.opacity='0',1500);
+}
+
+function today(){return new Date().toISOString().split('T')[0];}
+
+const WORKOUT_PLAN={
+  1:[{txt:'力量训练：深蹲3×12、硬拉3×10、臀桥3×15',tag:'塑形',cls:'t-fit'},{txt:'核心：平板支撑3×45s、卷腹3×20',tag:'塑形',cls:'t-fit'},{txt:'拉伸放松 10分钟',tag:'恢复',cls:'t-rec'}],
+  2:[{txt:'慢跑/快走 35分钟（心率130-150）',tag:'减脂',cls:'t-fit'},{txt:'跳绳 10分钟 轻松间歇',tag:'体能',cls:'t-fit'},{txt:'补充叶酸 0.4mg',tag:'备孕',cls:'t-pre'}],
+  3:[{txt:'上肢力量：推举3×10、划船3×12、俯卧撑3×max',tag:'增肌',cls:'t-fit'},{txt:'骨盆底肌练习15分钟（凯格尔）',tag:'备孕',cls:'t-pre'},{txt:'深度拉伸 15分钟',tag:'恢复',cls:'t-rec'}],
+  4:[{txt:'休息日：散步20分钟',tag:'恢复',cls:'t-rec'},{txt:'瑜伽放松课 30分钟',tag:'备孕',cls:'t-pre'},{txt:'确保蛋白质摄入达标',tag:'营养',cls:'t-nut'}],
+  5:[{txt:'全身复合训练：深蹲+推举+划船超级组 4轮',tag:'增肌',cls:'t-fit'},{txt:'LISS有氧：椭圆机/游泳 30分钟',tag:'减脂',cls:'t-fit'},{txt:'冰敷/泡澡恢复',tag:'恢复',cls:'t-rec'}],
+  6:[{txt:'户外快走/骑行 45分钟',tag:'体能',cls:'t-fit'},{txt:'瑜伽髋关节序列',tag:'备孕',cls:'t-pre'},{txt:'备孕营养：Omega-3、深绿蔬菜',tag:'营养',cls:'t-nut'}],
+  0:[{txt:'完全休息日——好好睡觉！',tag:'恢复',cls:'t-rec'},{txt:'轻度散步 20分钟（可选）',tag:'恢复',cls:'t-rec'}]
+};
+
+function renderWorkout(){
+  const plan=WORKOUT_PLAN[new Date().getDay()]||WORKOUT_PLAN[1];
+  const saved=data.workoutDays[today()]||{};
+  document.getElementById('workout-list').innerHTML=plan.map((w,i)=>`
+    <div class="habit" onclick="toggleWorkout(${i})">
+      <div class="hcheck ${saved[i]?'on':''}" id="wc-${i}">✓</div>
+      <div class="htxt">${w.txt}</div>
+      <span class="htag ${w.cls}">${w.tag}</span>
+    </div>`).join('');
+  document.getElementById('today-date').textContent=new Date().toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'});
+  renderWeekSummary();
+}
+
+function toggleWorkout(i){
+  if(!data.workoutDays[today()])data.workoutDays[today()]={};
+  data.workoutDays[today()][i]=!data.workoutDays[today()][i];
+  const el=document.getElementById('wc-'+i);
+  if(el)el.className='hcheck'+(data.workoutDays[today()][i]?' on':'');
+  saveData();updateHome();renderWeekSummary();
+}
+
+function renderWeekSummary(){
+  const days=Object.keys(data.workoutDays).filter(d=>{
+    const diff=(new Date(today())-new Date(d))/(1000*86400);
+    return diff>=0&&diff<7;
+  });
+  const active=days.filter(d=>Object.values(data.workoutDays[d]||{}).some(v=>v)).length;
+  const el=document.getElementById('week-summary');
+  if(el)el.textContent=`本周已完成 ${active} 天训练，目标 4 天。${active>=4?'🎉 本周目标达成！':active>=2?'保持节奏，继续加油！':'加油，还需要更多训练～'}`;
+  const h=document.getElementById('h-week');
+  if(h)h.innerHTML=`${active}<span class="unit">/4</span>`;
+}
+
+function renderCalendar(){
+  const grid=document.getElementById('cal-grid');
+  if(!grid)return;
+  const hdr=document.getElementById('cal-header');
+  if(hdr)hdr.innerHTML=['日','一','二','三','四','五','六'].map(d=>`<div style="text-align:center;font-size:10px;color:#888780;padding:2px">${d}</div>`).join('');
+  const start=new Date(data.startDate);
+  grid.innerHTML=Array.from({length:30},(_,i)=>{
+    const d=new Date(start);d.setDate(d.getDate()+i);
+    const ds=d.toISOString().split('T')[0];
+    const done=data.workoutDays[ds]&&Object.values(data.workoutDays[ds]).some(v=>v);
+    const isRest=d.getDay()===0||d.getDay()===4;
+    const isPast=d<=new Date();
+    return `<div class="cal-day">
+      <div class="cal-dn">${i+1}</div>
+      <div class="cal-dot ${done?'done':isRest&&isPast?'rest':''}" onclick="toggleCalDay('${ds}')">${done?'✓':isRest&&isPast?'休':i+1}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCalDay(ds){
+  if(!data.workoutDays[ds])data.workoutDays[ds]={};
+  const hasDone=Object.values(data.workoutDays[ds]).some(v=>v);
+  data.workoutDays[ds][0]=!hasDone;
+  saveData();updateHome();renderCalendar();
+}
+
+function updateHome(){
+  const allDays=Object.keys(data.workoutDays).filter(d=>Object.values(data.workoutDays[d]||{}).some(v=>v)).length;
+  const el=document.getElementById('h-days');if(el)el.innerHTML=`${allDays}<span class="unit">天</span>`;
+  const pct=Math.min(100,Math.round((allDays/30)*100));
+  const pb=document.getElementById('h-prog');if(pb)pb.style.width=pct+'%';
+  const pt=document.getElementById('h-prog-txt');if(pt)pt.textContent=`第${Math.max(1,allDays)}天，已完成 ${pct}%`;
+  const tc=data.workoutDays[today()]||{};
+  const dc=Object.values(tc).filter(v=>v).length;
+  const hw=document.getElementById('h-workout');if(hw)hw.textContent=dc>0?`${dc}项✓`:'待打卡';
+  const foods=data.foodLogs[today()]||[];
+  const cal=foods.reduce((s,f)=>s+(f.calories||0),0);
+  const hc=document.getElementById('h-cal');if(hc)hc.innerHTML=`${cal}<span class="unit">kcal</span>`;
+  const tcc=document.getElementById('total-cal');if(tcc)tcc.innerHTML=`${cal}<span class="unit">kcal</span>`;
+}
+
+function renderFoodLog(){
+  const logs=data.foodLogs[today()]||[];
+  const el=document.getElementById('food-log-list');
+  if(!el)return;
+  if(!logs.length){el.textContent='暂无记录，上传照片开始分析';return;}
+  el.innerHTML=logs.map(f=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid rgba(0,0,0,0.05)"><span>${f.name}</span><span style="color:#888780">${f.calories} kcal</span></div>`).join('');
+}
+
+let currentFoodData=null,currentFoodB64=null;
+
+function onFoodImg(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const preview=document.getElementById('food-preview');
+    preview.src=ev.target.result;preview.style.display='block';
+    document.getElementById('analyze-btn').style.display='block';
+    document.getElementById('food-result').style.display='none';
+    currentFoodB64=ev.target.result.split(',')[1];
+    currentFoodData=null;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeFood(){
+  document.getElementById('food-loading').style.display='block';
+  document.getElementById('analyze-btn').style.display='none';
+  document.getElementById('food-result').style.display='none';
+  try{
+    const resp=await fetch(CLAUDE_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:MODEL,max_tokens:1000,
+        system:'你是专业营养师。识别食物照片，估算营养成分，返回纯JSON（无其他文字）：{"name":"食物名","calories":数字,"protein":数字,"fat":数字,"carbs":数字,"advice":"结合减脂备孕目标的2-3句建议"}',
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:currentFoodB64}},
+          {type:'text',text:'请分析这张食物照片的营养成分'}
+        ]}]
+      })
+    });
+    const d=await resp.json();
+    const txt=d.content?.find(c=>c.type==='text')?.text||'{}';
+    currentFoodData=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    document.getElementById('food-macros').innerHTML=[
+      {l:'热量',v:currentFoodData.calories,u:'kcal'},
+      {l:'蛋白质',v:currentFoodData.protein,u:'g'},
+      {l:'脂肪',v:currentFoodData.fat,u:'g'},
+      {l:'碳水',v:currentFoodData.carbs,u:'g'}
+    ].map(m=>`<div class="mcard"><div class="label">${m.l}</div><div class="val">${m.v}<span class="unit">${m.u}</span></div></div>`).join('');
+    document.getElementById('food-advice').textContent=currentFoodData.advice||'';
+    document.getElementById('food-result').style.display='block';
+  }catch(e){
+    document.getElementById('food-advice').textContent='分析失败，请检查网络后重试';
+    document.getElementById('food-result').style.display='block';
+  }
+  document.getElementById('food-loading').style.display='none';
+}
+
+function saveFoodLog(){
+  if(!currentFoodData)return;
+  if(!data.foodLogs[today()])data.foodLogs[today()]=[];
+  data.foodLogs[today()].push(currentFoodData);
+  saveData();updateHome();renderFoodLog();
+  document.getElementById('food-result').style.display='none';
+  document.getElementById('food-preview').style.display='none';
+  document.getElementById('analyze-btn').style.display='none';
+  alert('已记录到今日饮食 ✓');
+}
+
+function logBBT(){
+  const v=document.getElementById('bbt-val').value;
+  if(!v||v<35||v>38.5){alert('请输入有效体温 (35-38.5°C)');return;}
+  data.bbt.push({date:today(),val:parseFloat(v)});
+  saveData();renderBBT();
+}
+
+function renderBBT(){
+  const el=document.getElementById('bbt-log-list');
+  if(!el)return;
+  if(!data.bbt.length){el.textContent='暂无记录';return;}
+  el.innerHTML=data.bbt.slice(-7).reverse().map(b=>`${b.date}　${b.val}°C`).join('<br>');
+}
+
+function logCycle(){
+  const d=document.getElementById('cycle-date').value;
+  if(!d)return;
+  data.cycles.push(d);data.cycles=[...new Set(data.cycles)].sort();
+  saveData();renderCycle();
+}
+
+function renderCycle(){
+  const el=document.getElementById('cycle-info');
+  if(!el||!data.cycles.length)return;
+  const last=data.cycles[data.cycles.length-1];
+  const ov=new Date(last);ov.setDate(ov.getDate()+14);
+  el.textContent=`最近月经：${last}，预估排卵日：${ov.toLocaleDateString('zh-CN',{month:'long',day:'numeric'})}（±2天）。排卵前后5天为最佳备孕窗口。`;
+}
+
+function toggleHabit(id){
+  const el=document.getElementById(id);if(!el)return;
+  const k=`${today()}_${id}`;
+  data.suppLogs[k]=!data.suppLogs[k];
+  el.className='hcheck'+(data.suppLogs[k]?' on':'');
+  saveData();
+}
+
+function renderSupp(){
+  ['supp-folic','supp-vd','supp-omega'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.className='hcheck'+(data.suppLogs[`${today()}_${id}`]?' on':'');
+  });
+}
+
+function buildContext(){
+  const foods=data.foodLogs[today()]||[];
+  const cal=foods.reduce((s,f)=>s+(f.calories||0),0);
+  const wd=Object.values(data.workoutDays[today()]||{}).filter(v=>v).length;
+  const totalDays=Object.keys(data.workoutDays).filter(d=>Object.values(data.workoutDays[d]||{}).some(v=>v)).length;
+  const lastBBT=data.bbt.length?data.bbt[data.bbt.length-1]:null;
+  const lastCycle=data.cycles.length?data.cycles[data.cycles.length-1]:null;
+  return{goals:'减脂塑形+增肌+备孕',today:today(),todayCalories:cal,todayFoods:foods.map(f=>f.name),todayWorkoutItems:wd,totalWorkoutDays:totalDays,planDay:totalDays+1,lastBBT,lastCycle,suppToday:{folic:!!data.suppLogs[`${today()}_supp-folic`],vd:!!data.suppLogs[`${today()}_supp-vd`],omega:!!data.suppLogs[`${today()}_supp-omega`]}};
+}
+
+async function callClaude(system,userMsg){
+  const resp=await fetch(CLAUDE_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:MODEL,max_tokens:1000,system,messages:[{role:'user',content:userMsg}]})
+  });
+  const d=await resp.json();
+  return d.content?.[0]?.text||'';
+}
+
+async function getHomeBrief(){
+  const el=document.getElementById('home-brief');
+  if(!el)return;
+  el.textContent='正在生成...';
+  try{
+    const r=await callClaude('你是AI健康顾问，给用户今日健康简报，简洁鼓励，不超过80字，中文，可以用emoji。',`数据：${JSON.stringify(buildContext())}`);
+    el.textContent=r;
+  }catch(e){el.textContent='坚持你的计划，今天也要加油 💪';}
+}
+
+async function getPrenatalAdvice(){
+  const el=document.getElementById('prenatal-advice');
+  el.textContent='正在生成备孕建议...';
+  try{
+    const r=await callClaude('你是专业备孕健康顾问，给出简洁实用的备孕建议，2-3段，不超过150字，中文。',`用户数据：${JSON.stringify(buildContext())}`);
+    el.textContent=r;
+  }catch(e){el.textContent='获取失败，请重试';}
+}
+
+async function sendChat(){
+  const input=document.getElementById('chat-input');
+  const msg=input.value.trim();if(!msg)return;
+  input.value='';
+  addMsg(msg,'user');
+  data.chatHistory.push({role:'user',content:msg});
+  const thinking=document.createElement('div');
+  thinking.className='msg-ai';thinking.textContent='思考中...';
+  document.getElementById('chat-area').appendChild(thinking);scrollChat();
+  try{
+    const resp=await fetch(CLAUDE_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:MODEL,max_tokens:1000,
+        system:`你是专业AI健康顾问。用户数据：${JSON.stringify(buildContext())}。目标：减脂塑形+增肌+备孕，运动基础好，进行中30天计划。回答简洁实用，100-200字，中文。`,
+        messages:data.chatHistory.slice(-10)
+      })
+    });
+    const d=await resp.json();
+    const reply=d.content?.[0]?.text||'请稍后再试';
+    thinking.textContent=reply;
+    data.chatHistory.push({role:'assistant',content:reply});
+    if(data.chatHistory.length>20)data.chatHistory=data.chatHistory.slice(-16);
+    saveData();
+  }catch(e){thinking.textContent='连接出错，请重试';}
+  scrollChat();
+}
+
+function quickAsk(q){
+  document.getElementById('chat-input').value=q;
+  sendChat();
+}
+
+function addMsg(txt,role){
+  const div=document.createElement('div');
+  div.className=role==='user'?'msg-user':'msg-ai';
+  div.textContent=txt;
+  document.getElementById('chat-area').appendChild(div);scrollChat();
+}
+
+function scrollChat(){const ca=document.getElementById('chat-area');if(ca)ca.scrollTop=ca.scrollHeight;}
+
+function show(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('p-'+page).classList.add('active');
+  const idx={home:0,workout:1,food:2,prenatal:3,advisor:4}[page];
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if(page==='workout'){renderWorkout();renderCalendar();}
+  if(page==='food')renderFoodLog();
+  if(page==='prenatal'){renderBBT();renderCycle();renderSupp();}
+}
+
+function renderAll(){
+  document.getElementById('header-date').textContent=new Date().toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'long'});
+  updateHome();renderFoodLog();renderBBT();renderCycle();renderSupp();renderCalendar();renderWorkout();
+  getHomeBrief();
+  if(data.chatHistory.length>0){
+    const ca=document.getElementById('chat-area');
+    data.chatHistory.slice(-6).forEach(m=>{
+      const div=document.createElement('div');
+      div.className=m.role==='user'?'msg-user':'msg-ai';
+      div.textContent=m.content;ca.appendChild(div);
+    });
+    scrollChat();
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
